@@ -17,14 +17,7 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-@Controller
-public class HomeController {
 
-    @GetMapping("/")
-    public String home() {
-        return "redirect:/login";
-    }
-}
 @Controller
 public class UserController {
 
