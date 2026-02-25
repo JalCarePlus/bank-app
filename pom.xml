@@ -47,12 +47,7 @@
 			<scope>runtime</scope>
 		</dependency>
 		
-		<!-- H2 for local development (optional) -->
-		<dependency>
-			<groupId>com.h2database</groupId>
-			<artifactId>h2</artifactId>
-			<scope>runtime</scope>
-		</dependency>
+	
 		
 		<!-- Thymeleaf Security -->
 		<dependency>
