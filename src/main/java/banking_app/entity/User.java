@@ -14,10 +14,10 @@ public class User {
     @Column(nullable = false)
     private String name;
 
-    @Column(unique = true, nullable = false)
+    @Column(nullable = false, unique = true)
     private String email;
 
-    @Column(unique = true, nullable = false)
+    @Column(nullable = false, unique = true)
     private String username;
 
     @Column(nullable = false)
@@ -26,11 +26,10 @@ public class User {
     @Column(nullable = false)
     private String role; // USER / ADMIN
 
-    // Optional active field (safe for missing DB column)
-    @Column(nullable = true)
-    private Boolean active;
+    @Column(nullable = false)
+    private boolean active = true;
 
-    @Column(updatable = false)
+    @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     private LocalDateTime lastLoginAt;
@@ -39,27 +38,19 @@ public class User {
 
     private String address;
 
-    // 🔹 Auto set created time
+    // 🔹 Automatically set createdAt before insert
     @PrePersist
     protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        if (active == null) {
-            active = true; // default active
-        }
+        this.createdAt = LocalDateTime.now();
+        this.active = true;
     }
 
-    // 🔹 Auto update login time manually when user logs in
-    @PreUpdate
-    protected void onUpdate() {
-        lastLoginAt = LocalDateTime.now();
+    // 🔹 Method to update last login time
+    public void updateLastLogin() {
+        this.lastLoginAt = LocalDateTime.now();
     }
 
-    // 🔹 Safe active check
-    public boolean isActive() {
-        return active == null || active;
-    }
-
-    // ===== Getters & Setters =====
+    // ================= GETTERS & SETTERS =================
 
     public Long getId() {
         return id;
@@ -73,20 +64,24 @@ public class User {
         this.name = name;
     }
 
+    public void setId(Long id) {
+        this.id = id;
+    }
+
     public String getEmail() {
         return email;
     }
 
+    public void setEmail(String email) {
+        this.email = email;
+    }
+    
     public String getUsername() {
         return username;
     }
 
     public void setUsername(String username) {
         this.username = username;
-    }
-
-    public void setEmail(String email) {
-        this.email = email;
     }
 
     public String getPassword() {
@@ -105,11 +100,11 @@ public class User {
         this.role = role;
     }
 
-    public Boolean getActive() {
+    public boolean isActive() {
         return active;
     }
 
-    public void setActive(Boolean active) {
+    public void setActive(boolean active) {
         this.active = active;
     }
 
@@ -119,10 +114,6 @@ public class User {
 
     public LocalDateTime getLastLoginAt() {
         return lastLoginAt;
-    }
-
-    public void setLastLoginAt(LocalDateTime lastLoginAt) {
-        this.lastLoginAt = lastLoginAt;
     }
 
     public String getPhoneNumber() {
