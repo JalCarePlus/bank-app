@@ -11,116 +11,133 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(nullable = false)
     private String name;
 
-    @Column(unique = true)
+    @Column(unique = true, nullable = false)
     private String email;
 
-    @Column(unique = true)
+    @Column(unique = true, nullable = false)
     private String username;
 
+    @Column(nullable = false)
     private String password;
 
+    @Column(nullable = false)
     private String role; // USER / ADMIN
-    
-    // New fields
-    private boolean active = true;
-    
+
+    // Optional active field (safe for missing DB column)
+    @Column(nullable = true)
+    private Boolean active;
+
+    @Column(updatable = false)
     private LocalDateTime createdAt;
-    
+
     private LocalDateTime lastLoginAt;
-    
+
     private String phoneNumber;
-    
+
     private String address;
 
-    // Getters and Setters for existing fields
-    public Long getId() { 
-        return id; 
-    }
-    
-    public void setId(Long id) { 
-        this.id = id; 
-    }
-
-    public String getName() { 
-        return name; 
-    }
-    
-    public void setName(String name) { 
-        this.name = name; 
+    // 🔹 Auto set created time
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDateTime.now();
+        if (active == null) {
+            active = true; // default active
+        }
     }
 
-    public String getEmail() { 
-        return email; 
-    }
-    
-    public void setEmail(String email) { 
-        this.email = email; 
+    // 🔹 Auto update login time manually when user logs in
+    @PreUpdate
+    protected void onUpdate() {
+        lastLoginAt = LocalDateTime.now();
     }
 
-    public String getUsername() { 
-        return username; 
-    }
-    
-    public void setUsername(String username) { 
-        this.username = username; 
+    // 🔹 Safe active check
+    public boolean isActive() {
+        return active == null || active;
     }
 
-    public String getPassword() { 
-        return password; 
-    }
-    
-    public void setPassword(String password) { 
-        this.password = password; 
+    // ===== Getters & Setters =====
+
+    public Long getId() {
+        return id;
     }
 
-    public String getRole() { 
-        return role; 
-    }
-    
-    public void setRole(String role) { 
-        this.role = role; 
+    public String getName() {
+        return name;
     }
 
-    // Getters and Setters for new fields
-    public boolean isActive() { 
-        return active; 
+    public void setName(String name) {
+        this.name = name;
     }
-    
-    public void setActive(boolean active) { 
-        this.active = active; 
+
+    public String getEmail() {
+        return email;
     }
-    
-    public LocalDateTime getCreatedAt() { 
-        return createdAt; 
+
+    public String getUsername() {
+        return username;
     }
-    
-    public void setCreatedAt(LocalDateTime createdAt) { 
-        this.createdAt = createdAt; 
+
+    public void setUsername(String username) {
+        this.username = username;
     }
-    
-    public LocalDateTime getLastLoginAt() { 
-        return lastLoginAt; 
+
+    public void setEmail(String email) {
+        this.email = email;
     }
-    
-    public void setLastLoginAt(LocalDateTime lastLoginAt) { 
-        this.lastLoginAt = lastLoginAt; 
+
+    public String getPassword() {
+        return password;
     }
-    
-    public String getPhoneNumber() { 
-        return phoneNumber; 
+
+    public void setPassword(String password) {
+        this.password = password;
     }
-    
-    public void setPhoneNumber(String phoneNumber) { 
-        this.phoneNumber = phoneNumber; 
+
+    public String getRole() {
+        return role;
     }
-    
-    public String getAddress() { 
-        return address; 
+
+    public void setRole(String role) {
+        this.role = role;
     }
-    
-    public void setAddress(String address) { 
-        this.address = address; 
+
+    public Boolean getActive() {
+        return active;
+    }
+
+    public void setActive(Boolean active) {
+        this.active = active;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public LocalDateTime getLastLoginAt() {
+        return lastLoginAt;
+    }
+
+    public void setLastLoginAt(LocalDateTime lastLoginAt) {
+        this.lastLoginAt = lastLoginAt;
+    }
+
+    public String getPhoneNumber() {
+        return phoneNumber;
+    }
+
+    public void setPhoneNumber(String phoneNumber) {
+        this.phoneNumber = phoneNumber;
+    }
+
+    public String getAddress() {
+        return address;
+    }
+
+    public void setAddress(String address) {
+        this.address = address;
     }
 }
