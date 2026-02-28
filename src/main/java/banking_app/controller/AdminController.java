@@ -23,7 +23,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
-import java.util.stream.Collectors;
+import java.util.ArrayList;
 
 @Controller
 @RequestMapping("/admin")
@@ -33,7 +33,7 @@ public class AdminController {
     private UserRepository userRepository;
 
     @Autowired
-    private AccountRepository accountRepository;  // This was missing
+    private AccountRepository accountRepository;  // Make sure this is present
 
     @Autowired
     private TransactionRepository transactionRepository;
@@ -58,13 +58,25 @@ public class AdminController {
         long totalTransactions = transactionRepository.count();
         
         // Calculate total balance across all accounts
-        List<Account> allAccounts = accountRepository.findAll();
-        double totalBalance = allAccounts.stream()
-            .mapToDouble(Account::getBalance)
-            .sum();
+        double totalBalance = 0.0;
+        try {
+            List<Account> allAccounts = accountRepository.findAll();
+            for (Account acc : allAccounts) {
+                if (acc.getBalance() != null) {
+                    totalBalance += acc.getBalance();
+                }
+            }
+        } catch (Exception e) {
+            System.out.println("Error calculating total balance: " + e.getMessage());
+        }
 
         // Get recent transactions (last 10)
-        List<Transaction> recentTransactions = transactionRepository.findTop10ByOrderByDateTimeDesc();
+        List<Transaction> recentTransactions = new ArrayList<>();
+        try {
+            recentTransactions = transactionRepository.findTop10ByOrderByDateTimeDesc();
+        } catch (Exception e) {
+            System.out.println("Error fetching recent transactions: " + e.getMessage());
+        }
         
         // Format dates for display
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
@@ -80,7 +92,7 @@ public class AdminController {
         model.addAttribute("totalAccounts", totalAccounts);
         model.addAttribute("totalBalance", totalBalance);
         model.addAttribute("totalTransactions", totalTransactions);
-        model.addAttribute("recentTransactions", recentTransactions != null ? recentTransactions : List.of());
+        model.addAttribute("recentTransactions", recentTransactions != null ? recentTransactions : new ArrayList<>());
 
         return "admin/dashboard";
     }
@@ -102,20 +114,31 @@ public class AdminController {
         Pageable pageable = PageRequest.of(page, 10);
         Page<User> userPage;
 
-        if (keyword != null && !keyword.isEmpty()) {
-            userPage = userRepository
-                    .findByUsernameContainingOrEmailContainingOrNameContaining(
-                            keyword, keyword, keyword, pageable);
-        } else {
-            userPage = userRepository.findAll(pageable);
+        try {
+            if (keyword != null && !keyword.isEmpty()) {
+                userPage = userRepository
+                        .findByUsernameContainingOrEmailContainingOrNameContaining(
+                                keyword, keyword, keyword, pageable);
+            } else {
+                userPage = userRepository.findAll(pageable);
+            }
+        } catch (Exception e) {
+            System.out.println("Error fetching users: " + e.getMessage());
+            userPage = Page.empty();
         }
 
         // Get accounts for each user
         Map<Long, Account> userAccounts = new HashMap<>();
-        for (User user : userPage.getContent()) {
-            Account account = accountRepository.findByUser(user);
-            if (account != null) {
-                userAccounts.put(user.getId(), account);
+        if (userPage.hasContent()) {
+            for (User user : userPage.getContent()) {
+                try {
+                    Account account = accountRepository.findByUser(user);
+                    if (account != null) {
+                        userAccounts.put(user.getId(), account);
+                    }
+                } catch (Exception e) {
+                    System.out.println("Error fetching account for user " + user.getId() + ": " + e.getMessage());
+                }
             }
         }
 
@@ -142,8 +165,20 @@ public class AdminController {
             return "redirect:/admin/users";
         }
 
-        Account account = accountRepository.findByUser(user);
-        List<Transaction> transactions = transactionRepository.findByUser(user);
+        Account account = null;
+        List<Transaction> transactions = new ArrayList<>();
+        
+        try {
+            account = accountRepository.findByUser(user);
+        } catch (Exception e) {
+            System.out.println("Error fetching account: " + e.getMessage());
+        }
+        
+        try {
+            transactions = transactionRepository.findByUser(user);
+        } catch (Exception e) {
+            System.out.println("Error fetching transactions: " + e.getMessage());
+        }
         
         // Format dates
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
@@ -157,7 +192,7 @@ public class AdminController {
 
         model.addAttribute("user", user);
         model.addAttribute("account", account);
-        model.addAttribute("transactions", transactions != null ? transactions : List.of());
+        model.addAttribute("transactions", transactions != null ? transactions : new ArrayList<>());
 
         return "admin/user-details";
     }
@@ -171,7 +206,12 @@ public class AdminController {
             return "redirect:/login";
         }
 
-        List<Transaction> transactions = transactionRepository.findAll();
+        List<Transaction> transactions = new ArrayList<>();
+        try {
+            transactions = transactionRepository.findAll();
+        } catch (Exception e) {
+            System.out.println("Error fetching transactions: " + e.getMessage());
+        }
         
         // Format dates
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
@@ -189,15 +229,17 @@ public class AdminController {
         
         if (transactions != null) {
             for (Transaction tx : transactions) {
-                if ("CREDIT".equals(tx.getType())) {
-                    totalCredits += tx.getAmount();
-                } else if ("DEBIT".equals(tx.getType())) {
-                    totalDebits += tx.getAmount();
+                if (tx.getAmount() != null) {
+                    if ("CREDIT".equals(tx.getType())) {
+                        totalCredits += tx.getAmount();
+                    } else if ("DEBIT".equals(tx.getType())) {
+                        totalDebits += tx.getAmount();
+                    }
                 }
             }
         }
 
-        model.addAttribute("transactions", transactions != null ? transactions : List.of());
+        model.addAttribute("transactions", transactions != null ? transactions : new ArrayList<>());
         model.addAttribute("totalCredits", totalCredits);
         model.addAttribute("totalDebits", totalDebits);
 
@@ -215,11 +257,23 @@ public class AdminController {
 
         LocalDateTime weekAgo = LocalDateTime.now().minusDays(7);
 
-        List<Object[]> dailyTransactions = transactionRepository.getDailyTransactionCount(weekAgo);
-        List<Object[]> transactionVolume = transactionRepository.getDailyTransactionVolume(weekAgo);
+        List<Object[]> dailyTransactions = new ArrayList<>();
+        List<Object[]> transactionVolume = new ArrayList<>();
+        
+        try {
+            dailyTransactions = transactionRepository.getDailyTransactionCount(weekAgo);
+        } catch (Exception e) {
+            System.out.println("Error fetching daily transactions: " + e.getMessage());
+        }
+        
+        try {
+            transactionVolume = transactionRepository.getDailyTransactionVolume(weekAgo);
+        } catch (Exception e) {
+            System.out.println("Error fetching transaction volume: " + e.getMessage());
+        }
 
-        model.addAttribute("dailyTransactions", dailyTransactions != null ? dailyTransactions : List.of());
-        model.addAttribute("transactionVolume", transactionVolume != null ? transactionVolume : List.of());
+        model.addAttribute("dailyTransactions", dailyTransactions != null ? dailyTransactions : new ArrayList<>());
+        model.addAttribute("transactionVolume", transactionVolume != null ? transactionVolume : new ArrayList<>());
 
         return "admin/statistics";
     }
@@ -238,19 +292,24 @@ public class AdminController {
             return "redirect:/login";
         }
 
-        if (userRepository.findByUsername(username) != null) {
+        User existingUser = userRepository.findByUsername(username);
+        if (existingUser != null) {
             return "redirect:/admin/users?error=exists";
         }
 
         User user = new User();
         user.setUsername(username);
         user.setEmail(email);
-        user.setPassword(password); // In production, encode this
+        user.setPassword(password); // In production, use passwordEncoder.encode(password)
         user.setRole("ADMIN");
-        user.setName("Administrator"); // Add default name
+        user.setName("Administrator");
 
-        userRepository.save(user);
-
-        return "redirect:/admin/users?success=created";
+        try {
+            userRepository.save(user);
+            return "redirect:/admin/users?success=created";
+        } catch (Exception e) {
+            System.out.println("Error creating admin: " + e.getMessage());
+            return "redirect:/admin/users?error=failed";
+        }
     }
 }
